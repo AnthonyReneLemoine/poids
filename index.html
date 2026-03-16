@@ -672,6 +672,115 @@
             text-decoration: underline;
         }
 
+        /* Login overlay */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            transition: opacity 0.4s ease;
+        }
+
+        .login-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .login-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            padding: 40px 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .login-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent-human), #8b5cf6);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 8px 24px var(--accent-human-glow);
+        }
+
+        .login-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .login-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: -16px;
+        }
+
+        .btn-google {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            color: #1f1f1f;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 24px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-google:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .btn-google:active {
+            transform: translateY(0);
+        }
+
+        .btn-google svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Bouton déconnexion dans le header */
+        .btn-signout {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        .btn-signout:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
         /* Version tag */
         .version {
             position: fixed;
@@ -684,6 +793,27 @@
     </style>
 </head>
 <body>
+    <!-- Login overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div class="login-icon">⚖️</div>
+            <div>
+                <div class="login-title">Suivi Poids</div>
+                <div class="login-subtitle">Connexion requise</div>
+            </div>
+            <button class="btn-google" onclick="seConnecter()">
+                <!-- Logo Google SVG -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Se connecter avec Google
+            </button>
+        </div>
+    </div>
+
     <!-- Loading overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loader">
@@ -699,26 +829,14 @@
                 <div class="logo-icon" id="logoIcon">⚖️</div>
                 <span class="logo-text">Suivi Poids</span>
             </div>
-            <div class="status-badge" id="statusBadge">
-                <span class="status-dot"></span>
-                <span id="statusText">Connexion...</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div class="status-badge" id="statusBadge">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Connexion...</span>
+                </div>
+                <button class="btn-signout" id="btnSignout" onclick="seDeconnecter()">Quitter</button>
             </div>
         </header>
-
-        <!-- Setup card (hidden when configured) -->
-        <div class="card card-setup" id="setupCard" style="display:none;">
-            <div class="setup-title">⚙️ Configuration Firebase requise</div>
-            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;">
-                Modifie la variable <code style="color:var(--accent-human)">firebaseConfig</code> dans le fichier <code style="color:var(--accent-human)">index.html</code> avec les informations de ton projet Firebase.
-            </p>
-            <div class="setup-code">
-                1. Crée un projet sur console.firebase.google.com<br>
-                2. Active Firestore Database<br>
-                3. Copie ta config dans firebaseConfig<br>
-                4. Dans Firestore &gt; Rules, autorise les lectures/écritures
-            </div>
-            <a class="setup-link" href="https://console.firebase.google.com" target="_blank">→ Ouvrir Firebase Console</a>
-        </div>
 
         <!-- Tabs -->
         <div class="tabs">
@@ -860,6 +978,13 @@
             deleteDoc,
             doc
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // ================================================================
         // CONFIGURATION FIREBASE
@@ -876,17 +1001,10 @@
         };
         // ================================================================
 
-        const IS_CONFIGURED = firebaseConfig.apiKey !== "VOTRE_API_KEY";
-
-        let app, db;
-        if (IS_CONFIGURED) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-        } else {
-            document.getElementById('setupCard').style.display = 'block';
-            document.getElementById('statusText').textContent = 'Non configuré';
-            hideLoading();
-        }
+        const app  = initializeApp(firebaseConfig);
+        const db   = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
         // ================================================================
         // Configuration de l'application
@@ -924,20 +1042,48 @@
         // Initialisation
         // ================================================================
         window.onload = () => {
-            if (IS_CONFIGURED) {
-                loadAllData();
-            }
-
             document.getElementById('weightInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !isLoading) submitWeight();
             });
-
             document.getElementById('weightAlone').addEventListener('input', updateCalcResult);
             document.getElementById('weightWithCat').addEventListener('input', updateCalcResult);
-
             document.getElementById('weightWithCat').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !isLoading) submitCatWeight();
             });
+        };
+
+        // Écoute les changements d'état de connexion
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Utilisateur connecté
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('btnSignout').style.display = 'block';
+                loadAllData();
+            } else {
+                // Non connecté → affiche l'écran de login
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('btnSignout').style.display = 'none';
+            }
+        });
+
+        // ================================================================
+        // Authentification
+        // ================================================================
+        window.seConnecter = async function() {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                if (err.code !== 'auth/popup-closed-by-user') {
+                    showToast('Erreur de connexion', 'error');
+                    console.error(err);
+                }
+            }
+        };
+
+        window.seDeconnecter = async function() {
+            if (!confirm('Se déconnecter ?')) return;
+            await signOut(auth);
         };
 
         // ================================================================
@@ -1084,7 +1230,7 @@
 
             if (dataCache[tab]) {
                 updateUI(dataCache[tab]);
-            } else if (IS_CONFIGURED) {
+            } else {
                 fetchEntries(tab).then(entries => {
                     dataCache[tab] = processData(entries, tab);
                     if (currentTab === tab) updateUI(dataCache[tab]);
@@ -1099,7 +1245,7 @@
         // Soumission d'un poids (Anthony)
         // ================================================================
         window.submitWeight = async function() {
-            if (!IS_CONFIGURED) { showToast('Firebase non configuré', 'error'); return; }
+            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const input = document.getElementById('weightInput');
             const weight = input.value.trim();
             const config = tabConfig[currentTab];
@@ -1160,7 +1306,7 @@
         // Soumission du poids de Minou (calculé)
         // ================================================================
         window.submitCatWeight = async function() {
-            if (!IS_CONFIGURED) { showToast('Firebase non configuré', 'error'); return; }
+            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const alone = parseFloat(document.getElementById('weightAlone').value);
             const withCat = parseFloat(document.getElementById('weightWithCat').value);
 
@@ -1202,7 +1348,7 @@
         // Suppression du dernier relevé
         // ================================================================
         window.deleteEntry = async function() {
-            if (!IS_CONFIGURED) { showToast('Firebase non configuré', 'error'); return; }
+            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const data = dataCache[currentTab];
             if (!data || !data.history || data.history.length === 0) {
                 showToast('Aucun relevé à supprimer', 'error');
