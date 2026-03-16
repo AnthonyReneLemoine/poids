@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #22222e;
+            --accent-human: #6366f1;
+            --accent-human-glow: rgba(99, 102, 241, 0.4);
+            --accent-human-soft: rgba(99, 102, 241, 0.15);
+            --accent-cat: #f97316;
+            --accent-cat-glow: rgba(249, 115, 22, 0.4);
+            --accent-cat-soft: rgba(249, 115, 22, 0.15);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.15);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-human-soft), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(16, 185, 129, 0.08), transparent);
+            pointer-events: none;
+            z-index: 0;
+            transition: background 0.5s ease;
+        }
+
+        body.cat-mode::before {
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-cat-soft), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(249, 115, 22, 0.08), transparent);
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px 16px 100px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 4px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-human), #8b5cf6);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 8px 24px var(--accent-human-glow);
+            transition: all 0.4s ease;
+        }
+
+        body.cat-mode .logo-icon {
+            background: linear-gradient(135deg, var(--accent-cat), #fb923c);
+            box-shadow: 0 8px 24px var(--accent-cat-glow);
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.synced {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.synced .status-dot {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success-glow);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab.active {
+            background: var(--accent-human);
+            color: white;
+            box-shadow: 0 4px 16px var(--accent-human-glow);
+        }
+
+        .tab.active.cat {
+            background: var(--accent-cat);
+            box-shadow: 0 4px 16px var(--accent-cat-glow);
+        }
+
+        .tab-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .card-main {
+            text-align: center;
+            padding: 32px 24px;
+            background: linear-gradient(180deg, var(--bg-card) 0%, var(--accent-human-soft) 100%);
+            border-color: rgba(99, 102, 241, 0.3);
+            transition: all 0.4s ease;
+        }
+
+        body.cat-mode .card-main {
+            background: linear-gradient(180deg, var(--bg-card) 0%, var(--accent-cat-soft) 100%);
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        .card-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .weight-display {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .weight-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-human) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.4s ease;
+        }
+
+        body.cat-mode .weight-value {
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cat) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .weight-unit {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .date-range {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Input card */
+        .card-input {
+            padding: 20px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-human);
+            box-shadow: 0 0 0 4px var(--accent-human-soft);
+        }
+
+        body.cat-mode .input-field:focus {
+            border-color: var(--accent-cat);
+            box-shadow: 0 0 0 4px var(--accent-cat-soft);
+        }
+
+        /* Mode calculé pour Minou */
+        .calc-step {
+            margin-bottom: 16px;
+        }
+
+        .calc-step-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .calc-step-number {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-cat-soft);
+            color: var(--accent-cat);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .calc-step .input-field {
+            width: 100%;
+        }
+
+        .calc-result {
+            background: var(--bg-primary);
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .calc-result.valid {
+            border-color: var(--accent-cat);
+            border-style: solid;
+            background: var(--accent-cat-soft);
+        }
+
+        .calc-result-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .calc-result-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+        }
+
+        .calc-result.valid .calc-result-value {
+            color: var(--accent-cat);
+        }
+
+        .btn-submit-full {
+            width: 100%;
+            padding: 16px;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent-human), #8b5cf6);
+            border: none;
+            border-radius: 14px;
+            padding: 16px 28px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+        }
+
+        body.cat-mode .btn-submit {
+            background: linear-gradient(135deg, var(--accent-cat), #fb923c);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-human-glow);
+        }
+
+        body.cat-mode .btn-submit:hover:not(:disabled) {
+            box-shadow: 0 8px 24px var(--accent-cat-glow);
+        }
+
+        .btn-submit:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-submit .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* History card */
+        .card-history {
+            padding: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+            animation: slideIn 0.3s ease;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .history-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .history-weight {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Delete button */
+        .btn-delete {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--danger-soft);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--danger);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: var(--danger);
+        }
+
+        .btn-delete:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 24px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .toast.success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.4s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .loader-ring {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-human);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* Subject name */
+        .subject-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--accent-human);
+            margin-bottom: 4px;
+            transition: color 0.3s ease;
+        }
+
+        body.cat-mode .subject-name {
+            color: var(--accent-cat);
+        }
+
+        /* Version tag */
+        .version {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader">
+            <div class="loader-ring"></div>
+            <div class="loader-text">Chargement...</div>
+        </div>
+    </div>
+
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon" id="logoIcon">⚖️</div>
+                <span class="logo-text">Suivi Poids</span>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span id="statusText">Connexion...</span>
+            </div>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" id="tabHuman" onclick="switchTab('human')">
+                <span class="tab-icon">👤</span>
+                <span>Anthony</span>
+            </button>
+            <button class="tab cat" id="tabCat" onclick="switchTab('cat')">
+                <span class="tab-icon">🐱</span>
+                <span>Minou</span>
+            </button>
+        </div>
+
+        <!-- Card principale - Moyenne -->
+        <div class="card card-main">
+            <div class="subject-name" id="subjectName">Anthony</div>
+            <div class="card-label">Moyenne globale</div>
+            <div class="weight-display">
+                <span class="weight-value" id="avgDisplay">--</span>
+                <span class="weight-unit">kg</span>
+            </div>
+            <div class="date-range" id="dateRange">--</div>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-value" id="minWeight">--</div>
+                    <div class="stat-label">Minimum</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="entryCount">--</div>
+                    <div class="stat-label">Relevés</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="maxWeight">--</div>
+                    <div class="stat-label">Maximum</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card saisie - Mode simple (Anthony) -->
+        <div class="card card-input" id="inputSingle">
+            <div class="card-label" style="margin-bottom: 12px;">Nouveau relevé</div>
+            <div class="input-wrapper">
+                <input 
+                    type="number" 
+                    id="weightInput" 
+                    class="input-field" 
+                    placeholder="00.0" 
+                    step="0.1" 
+                    inputmode="decimal"
+                    autocomplete="off"
+                >
+                <button class="btn-submit" id="submitBtn" onclick="submitWeight()">
+                    <span id="submitText">OK</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Card saisie - Mode calculé (Minou) -->
+        <div class="card card-input" id="inputCalculated" style="display: none;">
+            <div class="card-label" style="margin-bottom: 16px;">Peser Minou 🐱</div>
+            
+            <div class="calc-step">
+                <div class="calc-step-label">
+                    <span class="calc-step-number">1</span>
+                    <span>Ton poids seul (habillé)</span>
+                </div>
+                <input 
+                    type="number" 
+                    id="weightAlone" 
+                    class="input-field" 
+                    placeholder="00.0" 
+                    step="0.1" 
+                    inputmode="decimal"
+                    autocomplete="off"
+                >
+            </div>
+            
+            <div class="calc-step">
+                <div class="calc-step-label">
+                    <span class="calc-step-number">2</span>
+                    <span>Ton poids + Minou</span>
+                </div>
+                <input 
+                    type="number" 
+                    id="weightWithCat" 
+                    class="input-field" 
+                    placeholder="00.0" 
+                    step="0.1" 
+                    inputmode="decimal"
+                    autocomplete="off"
+                >
+            </div>
+            
+            <div class="calc-result" id="calcResult">
+                <div class="calc-result-label">Poids de Minou</div>
+                <div class="calc-result-value" id="calcResultValue">-- kg</div>
+            </div>
+            
+            <button class="btn-submit btn-submit-full" id="submitBtnCat" onclick="submitCatWeight()">
+                <span id="submitTextCat">Enregistrer</span>
+            </button>
+        </div>
+
+        <!-- Card historique -->
+        <div class="card card-history">
+            <div class="history-header">
+                <div class="card-label" style="margin: 0;">Derniers relevés</div>
+                <button class="btn-delete" id="deleteBtn" onclick="deleteEntry()">
+                    🗑️ Supprimer
+                </button>
+            </div>
+            <ul class="history-list" id="historyList">
+                <li class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <div>Aucun relevé pour le moment</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Version -->
+    <div class="version">v8.0</div>
+
+    <script>
+        // État de l'application
+        let isLoading = false;
+        let currentTab = 'human';
+        let dataCache = {
+            human: null,
+            cat: null
+        };
+
+        // Configuration par onglet
+        const tabConfig = {
+            human: {
+                name: 'Anthony',
+                icon: '👤',
+                min: 30,
+                max: 250,
+                placeholder: '00.0',
+                step: 0.1,
+                emptyIcon: '📊',
+                mode: 'single' // Une seule pesée
+            },
+            cat: {
+                name: 'Minou',
+                icon: '🐱',
+                min: 1,
+                max: 15,
+                placeholder: '00.0',
+                step: 0.1,
+                emptyIcon: '🐾',
+                mode: 'calculated' // Deux pesées avec calcul
+            }
+        };
+
+        // Initialisation
+        window.onload = () => {
+            loadAllData();
+            
+            document.getElementById('weightInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                    submitWeight();
+                }
+            });
+            
+            // Event listeners pour le calcul automatique du poids de Minou
+            document.getElementById('weightAlone').addEventListener('input', updateCalcResult);
+            document.getElementById('weightWithCat').addEventListener('input', updateCalcResult);
+            
+            // Soumission avec Entrée pour Minou
+            document.getElementById('weightWithCat').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                    submitCatWeight();
+                }
+            });
+        };
+        
+        // Calcul automatique du poids de Minou
+        function updateCalcResult() {
+            const alone = parseFloat(document.getElementById('weightAlone').value);
+            const withCat = parseFloat(document.getElementById('weightWithCat').value);
+            const resultEl = document.getElementById('calcResult');
+            const resultValueEl = document.getElementById('calcResultValue');
+            const submitBtn = document.getElementById('submitBtnCat');
+            
+            if (!isNaN(alone) && !isNaN(withCat) && withCat > alone) {
+                const catWeight = (withCat - alone).toFixed(2);
+                resultValueEl.textContent = catWeight + ' kg';
+                resultEl.classList.add('valid');
+                submitBtn.disabled = false;
+            } else {
+                resultValueEl.textContent = '-- kg';
+                resultEl.classList.remove('valid');
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // Soumission du poids de Minou (calculé)
+        function submitCatWeight() {
+            const alone = parseFloat(document.getElementById('weightAlone').value);
+            const withCat = parseFloat(document.getElementById('weightWithCat').value);
+            
+            if (isNaN(alone) || isNaN(withCat)) {
+                showToast('Remplis les deux champs', 'error');
+                return;
+            }
+            
+            if (withCat <= alone) {
+                showToast('Poids avec Minou doit être supérieur', 'error');
+                return;
+            }
+            
+            const catWeight = (withCat - alone).toFixed(2);
+            const config = tabConfig.cat;
+            
+            if (catWeight < config.min || catWeight > config.max) {
+                showToast(`Poids invalide (${config.min}-${config.max} kg)`, 'error');
+                return;
+            }
+            
+            if (isLoading) return;
+            setLoading(true);
+            
+            google.script.run
+                .withSuccessHandler((data) => {
+                    dataCache.cat = data;
+                    updateUI(data);
+                    document.getElementById('weightAlone').value = '';
+                    document.getElementById('weightWithCat').value = '';
+                    updateCalcResult();
+                    setLoading(false);
+                    showToast('Poids de Minou enregistré ✓', 'success');
+                })
+                .withFailureHandler((error) => {
+                    setLoading(false);
+                    showToast(error.message || 'Erreur d\'enregistrement', 'error');
+                    console.error(error);
+                })
+                .addWeight(catWeight, 'cat');
+        }
+
+        // Chargement de toutes les données
+        function loadAllData() {
+            google.script.run
+                .withSuccessHandler((data) => {
+                    dataCache.human = data.human;
+                    dataCache.cat = data.cat;
+                    updateUI(dataCache[currentTab]);
+                    hideLoading();
+                })
+                .withFailureHandler((error) => {
+                    showToast('Erreur de chargement', 'error');
+                    hideLoading();
+                    console.error(error);
+                })
+                .getAllData();
+        }
+
+        // Changement d'onglet
+        function switchTab(tab) {
+            if (tab === currentTab || isLoading) return;
+            
+            currentTab = tab;
+            const config = tabConfig[tab];
+            
+            // Mise à jour visuelle des onglets
+            document.getElementById('tabHuman').classList.toggle('active', tab === 'human');
+            document.getElementById('tabCat').classList.toggle('active', tab === 'cat');
+            
+            // Mode cat pour le body
+            document.body.classList.toggle('cat-mode', tab === 'cat');
+            
+            // Mise à jour de l'icône du logo
+            document.getElementById('logoIcon').textContent = tab === 'cat' ? '🐱' : '⚖️';
+            
+            // Mise à jour du nom
+            document.getElementById('subjectName').textContent = config.name;
+            
+            // Afficher le bon mode d'input
+            const inputSingle = document.getElementById('inputSingle');
+            const inputCalculated = document.getElementById('inputCalculated');
+            
+            if (config.mode === 'calculated') {
+                inputSingle.style.display = 'none';
+                inputCalculated.style.display = 'block';
+                // Reset des champs
+                document.getElementById('weightAlone').value = '';
+                document.getElementById('weightWithCat').value = '';
+                updateCalcResult();
+            } else {
+                inputSingle.style.display = 'block';
+                inputCalculated.style.display = 'none';
+                // Mise à jour du placeholder et step
+                const input = document.getElementById('weightInput');
+                input.placeholder = config.placeholder;
+                input.step = config.step;
+                input.min = config.min;
+                input.max = config.max;
+                input.value = '';
+            }
+            
+            // Mise à jour de l'UI avec les données en cache
+            if (dataCache[tab]) {
+                updateUI(dataCache[tab]);
+            } else {
+                loadTabData(tab);
+            }
+        }
+
+        // Chargement des données d'un onglet
+        function loadTabData(tab) {
+            google.script.run
+                .withSuccessHandler((data) => {
+                    dataCache[tab] = data;
+                    if (currentTab === tab) {
+                        updateUI(data);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    showToast('Erreur de chargement', 'error');
+                    console.error(error);
+                })
+                .getDashboardData(tab);
+        }
+
+        // Soumission d'un poids
+        function submitWeight() {
+            const input = document.getElementById('weightInput');
+            const weight = input.value.trim();
+            const config = tabConfig[currentTab];
+            
+            if (!weight) {
+                showToast('Entrez une valeur', 'error');
+                input.focus();
+                return;
+            }
+
+            const numWeight = parseFloat(weight);
+            if (isNaN(numWeight) || numWeight < config.min || numWeight > config.max) {
+                showToast(`Poids invalide (${config.min}-${config.max} kg)`, 'error');
+                input.focus();
+                return;
+            }
+
+            if (isLoading) return;
+            setLoading(true);
+
+            google.script.run
+                .withSuccessHandler((data) => {
+                    dataCache[currentTab] = data;
+                    updateUI(data);
+                    input.value = '';
+                    setLoading(false);
+                    showToast('Relevé enregistré ✓', 'success');
+                })
+                .withFailureHandler((error) => {
+                    setLoading(false);
+                    showToast(error.message || 'Erreur d\'enregistrement', 'error');
+                    console.error(error);
+                })
+                .addWeight(weight, currentTab);
+        }
+
+        // Suppression du dernier relevé
+        function deleteEntry() {
+            const data = dataCache[currentTab];
+            if (!data || !data.history || data.history.length === 0) {
+                showToast('Aucun relevé à supprimer', 'error');
+                return;
+            }
+
+            const config = tabConfig[currentTab];
+            if (!confirm(`Supprimer le dernier relevé de ${config.name} ?`)) return;
+            if (isLoading) return;
+            
+            setLoading(true);
+
+            google.script.run
+                .withSuccessHandler((data) => {
+                    dataCache[currentTab] = data;
+                    updateUI(data);
+                    setLoading(false);
+                    showToast('Relevé supprimé', 'success');
+                })
+                .withFailureHandler((error) => {
+                    setLoading(false);
+                    showToast(error.message || 'Erreur de suppression', 'error');
+                    console.error(error);
+                })
+                .deleteLastEntry(currentTab);
+        }
+
+        // Mise à jour de l'interface
+        function updateUI(data) {
+            const config = tabConfig[currentTab];
+            
+            // Moyenne
+            document.getElementById('avgDisplay').textContent = data.average;
+            document.getElementById('dateRange').textContent = data.range;
+            
+            // Stats
+            document.getElementById('minWeight').textContent = data.min + (data.min !== '--' ? ' kg' : '');
+            document.getElementById('maxWeight').textContent = data.max + (data.max !== '--' ? ' kg' : '');
+            document.getElementById('entryCount').textContent = data.count || '--';
+
+            // Status
+            const badge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            badge.classList.add('synced');
+            statusText.textContent = 'Sync OK';
+
+            // Historique
+            const hasData = data.history && data.history.length > 0;
+            const list = document.getElementById('historyList');
+            
+            if (hasData) {
+                list.innerHTML = data.history.map((item, index) => `
+                    <li class="history-item" style="animation-delay: ${index * 0.05}s">
+                        <span class="history-date" title="${item.fullDate}">${item.date}</span>
+                        <span class="history-weight">${item.weight} kg</span>
+                    </li>
+                `).join('');
+            } else {
+                list.innerHTML = `
+                    <li class="empty-state">
+                        <div class="empty-state-icon">${config.emptyIcon}</div>
+                        <div>Aucun relevé pour ${config.name}</div>
+                    </li>
+                `;
+            }
+
+            // Bouton supprimer
+            document.getElementById('deleteBtn').disabled = !hasData;
+        }
+
+        // Gestion du loading
+        function setLoading(loading) {
+            isLoading = loading;
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('submitText');
+            const btnCat = document.getElementById('submitBtnCat');
+            const btnTextCat = document.getElementById('submitTextCat');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const badge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            const tabs = document.querySelectorAll('.tab');
+
+            btn.disabled = loading;
+            tabs.forEach(tab => tab.disabled = loading);
+
+            const data = dataCache[currentTab];
+            const hasData = data && data.history && data.history.length > 0;
+            deleteBtn.disabled = loading || !hasData;
+
+            if (loading) {
+                btnText.innerHTML = '<div class="spinner"></div>';
+                btnTextCat.innerHTML = '<div class="spinner"></div>';
+                badge.classList.remove('synced');
+                statusText.textContent = 'Sync...';
+            } else {
+                btnText.textContent = 'OK';
+                btnTextCat.textContent = 'Enregistrer';
+                // Réactiver le bouton cat seulement si le calcul est valide
+                updateCalcResult();
+            }
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            
+            toast.offsetHeight;
+            toast.classList.add('visible');
+
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
