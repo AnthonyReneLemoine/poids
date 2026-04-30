@@ -962,257 +962,61 @@
     <div class="toast" id="toast"></div>
 
     <!-- Version -->
-    <div class="version">v9.0 · Firebase</div>
+    <div class="version">v10.0 · Google Sheets</div>
 
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import {
-            getFirestore,
-            collection,
-            addDoc,
-            getDocs,
-            query,
-            orderBy,
-            limit,
-            deleteDoc,
-            doc
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import {
-            getAuth,
-            GoogleAuthProvider,
-            signInWithPopup,
-            signOut,
-            onAuthStateChanged
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-        // ================================================================
-        // CONFIGURATION FIREBASE
-        // Remplace ces valeurs par celles de ton projet Firebase :
-        // Console Firebase → Paramètres du projet → Vos applications → SDK
-        // ================================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMiLaxqORBjdm-Tkq56F8cEKbxVW3H8Pc",
-            authDomain: "poids-79bd4.firebaseapp.com",
-            projectId: "poids-79bd4",
-            storageBucket: "poids-79bd4.firebasestorage.app",
-            messagingSenderId: "667102413311",
-            appId: "1:667102413311:web:7cfd2e05eaac7beb71e7ca"
-        };
-        // ================================================================
-
-        const app  = initializeApp(firebaseConfig);
-        const db   = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-
-        // ================================================================
-        // Configuration de l'application
-        // ================================================================
-        const HISTORY_COUNT = 7;
-
+    <script>
         const tabConfig = {
-            human: {
-                name: 'Anthony',
-                icon: '👤',
-                min: 30,
-                max: 250,
-                placeholder: '00.0',
-                step: 0.1,
-                emptyIcon: '📊',
-                mode: 'single'
-            },
-            cat: {
-                name: 'Minou',
-                icon: '🐱',
-                min: 1,
-                max: 15,
-                placeholder: '00.0',
-                step: 0.1,
-                emptyIcon: '🐾',
-                mode: 'calculated'
-            }
+            human: { name: 'Anthony', icon: '👤', min: 30, max: 250, placeholder: '00.0', step: 0.1, emptyIcon: '📊', mode: 'single' },
+            cat: { name: 'Minou', icon: '🐱', min: 1, max: 15, placeholder: '00.0', step: 0.1, emptyIcon: '🐾', mode: 'calculated' }
         };
 
         let isLoading = false;
         let currentTab = 'human';
         let dataCache = { human: null, cat: null };
 
-        // ================================================================
-        // Initialisation
-        // ================================================================
-        window.onload = () => {
-            document.getElementById('weightInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !isLoading) submitWeight();
+        function runServer(fn, ...args) {
+            return new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)[fn](...args);
             });
+        }
+
+        window.onload = async () => {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('btnSignout').style.display = 'none';
+            document.getElementById('weightInput').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !isLoading) submitWeight(); });
             document.getElementById('weightAlone').addEventListener('input', updateCalcResult);
             document.getElementById('weightWithCat').addEventListener('input', updateCalcResult);
-            document.getElementById('weightWithCat').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !isLoading) submitCatWeight();
-            });
+            document.getElementById('weightWithCat').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !isLoading) submitCatWeight(); });
+            await loadAllData();
         };
 
-        // Écoute les changements d'état de connexion
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Utilisateur connecté
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('btnSignout').style.display = 'block';
-                loadAllData();
-            } else {
-                // Non connecté → affiche l'écran de login
-                document.getElementById('loginOverlay').classList.remove('hidden');
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                document.getElementById('btnSignout').style.display = 'none';
-            }
-        });
-
-        // ================================================================
-        // Authentification
-        // ================================================================
-        window.seConnecter = async function() {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (err) {
-                if (err.code !== 'auth/popup-closed-by-user') {
-                    showToast('Erreur de connexion', 'error');
-                    console.error(err);
-                }
-            }
-        };
-
-        window.seDeconnecter = async function() {
-            if (!confirm('Se déconnecter ?')) return;
-            await signOut(auth);
-        };
-
-        // ================================================================
-        // Firebase : lecture des entrées d'un type
-        // ================================================================
-        async function fetchEntries(type) {
-            const q = query(collection(db, type), orderBy('timestamp', 'asc'));
-            const snapshot = await getDocs(q);
-            return snapshot.docs.map(d => ({
-                docId: d.id,
-                weight: parseFloat(d.data().weight),
-                timestamp: d.data().timestamp?.toDate() || new Date()
-            }));
-        }
-
-        // ================================================================
-        // Traitement des données (logique anciennement dans Code.gs)
-        // ================================================================
-        function processData(entries, type) {
-            const config = tabConfig[type];
-            const valid = entries
-                .filter(e => !isNaN(e.weight) && e.weight >= config.min && e.weight <= config.max)
-                .sort((a, b) => a.timestamp - b.timestamp);
-
-            if (valid.length === 0) {
-                return { average: "--", history: [], range: "Aucune donnée", count: 0, min: "--", max: "--", trend: null, type };
-            }
-
-            const decimals = type === 'cat' ? 2 : 1;
-            const weights = valid.map(e => e.weight);
-            const avg = (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(decimals);
-            const minW = Math.min(...weights).toFixed(decimals);
-            const maxW = Math.max(...weights).toFixed(decimals);
-
-            let trend = null;
-            if (valid.length >= 3) {
-                const recent = weights.slice(-3);
-                const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-                const diff = recentAvg - parseFloat(avg);
-                const threshold = type === 'cat' ? 0.1 : 0.3;
-                trend = Math.abs(diff) > threshold ? (diff > 0 ? "up" : "down") : "stable";
-            }
-
-            const firstDate = valid[0].timestamp;
-            const lastDate = valid[valid.length - 1].timestamp;
-
-            const history = valid.slice(-HISTORY_COUNT).reverse().map(e => ({
-                date: formatDateFR(e.timestamp),
-                weight: e.weight.toFixed(decimals),
-                fullDate: formatFullDate(e.timestamp),
-                docId: e.docId
-            }));
-
-            return {
-                average: avg,
-                history,
-                range: formatDateRange(firstDate, lastDate),
-                count: valid.length,
-                min: minW,
-                max: maxW,
-                trend,
-                type
-            };
-        }
-
-        // ================================================================
-        // Formatage des dates en français
-        // ================================================================
-        function formatDateFR(date) {
-            const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const mois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-            const j = jours[date.getDay()];
-            const num = String(date.getDate()).padStart(2, '0');
-            const m = mois[date.getMonth()];
-            return `${j} ${num} ${m}`;
-        }
-
-        function formatMonthYearFR(date) {
-            const mois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-            return `${mois[date.getMonth()]} ${date.getFullYear()}`;
-        }
-
-        function formatDateRange(first, last) {
-            const a = formatMonthYearFR(first);
-            const b = formatMonthYearFR(last);
-            return a === b ? a : `${a} → ${b}`;
-        }
-
-        function formatFullDate(date) {
-            return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        }
-
-        // ================================================================
-        // Chargement de toutes les données
-        // ================================================================
         async function loadAllData() {
             try {
-                const [humanEntries, catEntries] = await Promise.all([
-                    fetchEntries('human'),
-                    fetchEntries('cat')
-                ]);
-                dataCache.human = processData(humanEntries, 'human');
-                dataCache.cat = processData(catEntries, 'cat');
+                const [human, cat] = await Promise.all([runServer('getDashboardData', 'human'), runServer('getDashboardData', 'cat')]);
+                dataCache.human = human;
+                dataCache.cat = cat;
                 updateUI(dataCache[currentTab]);
                 hideLoading();
             } catch (err) {
                 showToast('Erreur de chargement', 'error');
                 hideLoading();
-                console.error(err);
             }
         }
 
-        // ================================================================
-        // Changement d'onglet
-        // ================================================================
         window.switchTab = function(tab) {
             if (tab === currentTab || isLoading) return;
             currentTab = tab;
             const config = tabConfig[tab];
-
             document.getElementById('tabHuman').classList.toggle('active', tab === 'human');
             document.getElementById('tabCat').classList.toggle('active', tab === 'cat');
             document.body.classList.toggle('cat-mode', tab === 'cat');
             document.getElementById('logoIcon').textContent = tab === 'cat' ? '🐱' : '⚖️';
             document.getElementById('subjectName').textContent = config.name;
-
             const inputSingle = document.getElementById('inputSingle');
             const inputCalculated = document.getElementById('inputCalculated');
-
             if (config.mode === 'calculated') {
                 inputSingle.style.display = 'none';
                 inputCalculated.style.display = 'block';
@@ -1227,69 +1031,33 @@
                 input.step = config.step;
                 input.value = '';
             }
-
-            if (dataCache[tab]) {
-                updateUI(dataCache[tab]);
-            } else {
-                fetchEntries(tab).then(entries => {
-                    dataCache[tab] = processData(entries, tab);
-                    if (currentTab === tab) updateUI(dataCache[tab]);
-                }).catch(err => {
-                    showToast('Erreur de chargement', 'error');
-                    console.error(err);
-                });
-            }
+            if (dataCache[tab]) updateUI(dataCache[tab]);
         };
 
-        // ================================================================
-        // Soumission d'un poids (Anthony)
-        // ================================================================
         window.submitWeight = async function() {
-            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const input = document.getElementById('weightInput');
             const weight = input.value.trim();
             const config = tabConfig[currentTab];
-
             if (!weight) { showToast('Entrez une valeur', 'error'); input.focus(); return; }
-
             const numWeight = parseFloat(weight);
-            if (isNaN(numWeight) || numWeight < config.min || numWeight > config.max) {
-                showToast(`Poids invalide (${config.min}-${config.max} kg)`, 'error');
-                input.focus();
-                return;
-            }
-
+            if (isNaN(numWeight) || numWeight < config.min || numWeight > config.max) { showToast(`Poids invalide (${config.min}-${config.max} kg)`, 'error'); input.focus(); return; }
             if (isLoading) return;
             setLoading(true);
-
             try {
-                await addDoc(collection(db, currentTab), {
-                    weight: Math.round(numWeight * 10) / 10,
-                    timestamp: new Date()
-                });
-                const entries = await fetchEntries(currentTab);
-                dataCache[currentTab] = processData(entries, currentTab);
+                dataCache[currentTab] = await runServer('addWeight', numWeight, currentTab);
                 updateUI(dataCache[currentTab]);
                 input.value = '';
                 showToast('Relevé enregistré ✓', 'success');
-            } catch (err) {
-                showToast(err.message || "Erreur d'enregistrement", 'error');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { showToast(err.message || "Erreur d'enregistrement", 'error'); }
+            finally { setLoading(false); }
         };
 
-        // ================================================================
-        // Calcul automatique du poids de Minou
-        // ================================================================
-        window.updateCalcResult = function() {
+        window.updateCalcResult = function() { /* inchangé */
             const alone = parseFloat(document.getElementById('weightAlone').value);
             const withCat = parseFloat(document.getElementById('weightWithCat').value);
             const resultEl = document.getElementById('calcResult');
             const resultValueEl = document.getElementById('calcResultValue');
             const submitBtn = document.getElementById('submitBtnCat');
-
             if (!isNaN(alone) && !isNaN(withCat) && withCat > alone) {
                 const catWeight = (withCat - alone).toFixed(2);
                 resultValueEl.textContent = catWeight + ' kg';
@@ -1302,88 +1070,51 @@
             }
         };
 
-        // ================================================================
-        // Soumission du poids de Minou (calculé)
-        // ================================================================
         window.submitCatWeight = async function() {
-            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const alone = parseFloat(document.getElementById('weightAlone').value);
             const withCat = parseFloat(document.getElementById('weightWithCat').value);
-
             if (isNaN(alone) || isNaN(withCat)) { showToast('Remplis les deux champs', 'error'); return; }
             if (withCat <= alone) { showToast('Poids avec Minou doit être supérieur', 'error'); return; }
-
             const catWeight = Math.round((withCat - alone) * 100) / 100;
-            const config = tabConfig.cat;
-
-            if (catWeight < config.min || catWeight > config.max) {
-                showToast(`Poids invalide (${config.min}-${config.max} kg)`, 'error');
-                return;
-            }
-
+            if (catWeight < tabConfig.cat.min || catWeight > tabConfig.cat.max) { showToast(`Poids invalide (${tabConfig.cat.min}-${tabConfig.cat.max} kg)`, 'error'); return; }
             if (isLoading) return;
             setLoading(true);
-
             try {
-                await addDoc(collection(db, 'cat'), {
-                    weight: catWeight,
-                    timestamp: new Date()
-                });
-                const entries = await fetchEntries('cat');
-                dataCache.cat = processData(entries, 'cat');
+                dataCache.cat = await runServer('addWeight', catWeight, 'cat');
                 updateUI(dataCache.cat);
                 document.getElementById('weightAlone').value = '';
                 document.getElementById('weightWithCat').value = '';
                 updateCalcResult();
                 showToast('Poids de Minou enregistré ✓', 'success');
-            } catch (err) {
-                showToast(err.message || "Erreur d'enregistrement", 'error');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { showToast(err.message || "Erreur d'enregistrement", 'error'); }
+            finally { setLoading(false); }
         };
 
-        // ================================================================
-        // Suppression du dernier relevé
-        // ================================================================
         window.deleteEntry = async function() {
-            if (!auth.currentUser) { showToast('Non connecté', 'error'); return; }
             const data = dataCache[currentTab];
-            if (!data || !data.history || data.history.length === 0) {
-                showToast('Aucun relevé à supprimer', 'error');
-                return;
-            }
-
-            const config = tabConfig[currentTab];
-            if (!confirm(`Supprimer le dernier relevé de ${config.name} ?`)) return;
+            if (!data || !data.history || data.history.length === 0) { showToast('Aucun relevé à supprimer', 'error'); return; }
+            if (!confirm(`Supprimer le dernier relevé de ${tabConfig[currentTab].name} ?`)) return;
             if (isLoading) return;
-
             setLoading(true);
-
             try {
-                // Récupère le document le plus récent
-                const q = query(collection(db, currentTab), orderBy('timestamp', 'desc'), limit(1));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) throw new Error("Aucun relevé à supprimer.");
-                await deleteDoc(doc(db, currentTab, snapshot.docs[0].id));
-
-                const entries = await fetchEntries(currentTab);
-                dataCache[currentTab] = processData(entries, currentTab);
+                dataCache[currentTab] = await runServer('deleteLastEntry', currentTab);
                 updateUI(dataCache[currentTab]);
                 showToast('Relevé supprimé', 'success');
-            } catch (err) {
-                showToast(err.message || "Erreur de suppression", 'error');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { showToast(err.message || "Erreur de suppression", 'error'); }
+            finally { setLoading(false); }
         };
 
-        // ================================================================
-        // Mise à jour de l'interface
-        // ================================================================
-        function updateUI(data) {
+
+        window.seConnecter = function() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            showToast('Connexion Google non requise sur cette version GAS', 'info');
+        };
+
+        window.seDeconnecter = function() {
+            showToast('La déconnexion n'est pas utilisée sur cette version', 'info');
+        };
+
+function updateUI(data) {
             const config = tabConfig[currentTab];
 
             document.getElementById('avgDisplay').textContent = data.average;
@@ -1470,6 +1201,5 @@
 
         // Exposer showToast globalement si besoin
         window.showToast = showToast;
+    
     </script>
-</body>
-</html>
